@@ -283,7 +283,7 @@ parseLine set = do
     tagAttribValue notInQuotes = do
         cr <- (char '"' >> return InQuotes) <|> return notInQuotes
         fst <$> content cr
-    tagIdent = char '#' >> TagIdent <$> tagAttribValue NotInQuotes
+    tagIdent = string "##" >> TagIdent <$> tagAttribValue NotInQuotes
     tagCond = do
         d <- between (char ':') (char ':') parseDeref
         tagClass (Just d) <|> tagAttrib (Just d)
@@ -307,9 +307,10 @@ parseLine set = do
 
     ident :: Parser Ident
     ident = do
+      tpl <- (string "*" <|> string "#" <|> return "")
       i <- many1 (alphaNum <|> char '_' <|> char '\'')
       white
-      return (Ident i)
+      return (Ident $ tpl ++ i)
      <?> "identifier"
 
     parens = between (char '(' >> white) (char ')' >> white)
@@ -411,7 +412,7 @@ parseLine set = do
 
     angle = do
         _ <- char '<'
-        name' <- many  $ noneOf " \t.#\r\n!>"
+        name' <- many  $ noneOf " \t.\r\n!>"
         let name = if null name' then "div" else name'
         xs <- many $ try ((many $ oneOf " \t\r\n") >>
               (tagIdent <|> tagCond <|> tagClass Nothing <|> tagAttrs <|> tagAttrib Nothing))
